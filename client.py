@@ -6,13 +6,14 @@ import time
 VPS_IP = '188.245.79.193'  # <-- сюда подставь IP VPS
 VPS_PORT = 14550
 
-def scale(val):
-    return int(1500 + val * 500)  # RC: 1000–2000
+def scale(val, neutral=1500, amplitude=400):
+    return int(neutral + val * amplitude)
 
 def main():
     # Инициализация MAVLink
     master = mavutil.mavlink_connection(f'udpout:{VPS_IP}:{VPS_PORT}')
-    print("MAVLink connection established")
+    master.wait_heartbeat()
+    print(f"Connected to system {master.target_system}, component {master.target_component}")
 
     # Инициализация геймпада
     pygame.init()
@@ -37,6 +38,8 @@ def main():
             scale(yaw),      # chan4
             0, 0, 0, 0        # остальные каналы — без изменений
         )
+
+        print(f"RC → roll: {scale(roll)}, pitch: {scale(pitch)}, throttle: {scale(throttle)}, yaw: {scale(yaw)}")
 
         time.sleep(0.05)  # 20 Гц
 
