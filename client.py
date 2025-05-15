@@ -16,8 +16,8 @@ def main():
         print(f"Connected to system {master.target_system}, component {master.target_component}")
     except:
         print("⚠️ HEARTBEAT not received. Using default target IDs.")
-    target_system = 1
-    target_component = 1
+        target_system = 1
+        target_component = 1
 
     # Pygame init
     pygame.init()
