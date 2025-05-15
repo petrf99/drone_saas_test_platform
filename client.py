@@ -14,6 +14,8 @@ def main():
     try:
         master.wait_heartbeat(timeout=5)
         print(f"Connected to system {master.target_system}, component {master.target_component}")
+        target_system = master.target_system
+        target_component = master.target_component
     except:
         print("⚠️ HEARTBEAT not received. Using default target IDs.")
         target_system = 1
