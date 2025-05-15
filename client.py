@@ -1,50 +1,69 @@
-# deck_client.py
 import pygame
 from pymavlink import mavutil
 import time
 
-VPS_IP = '188.245.79.193'  # <-- сюда подставь IP VPS
+VPS_IP = '188.245.79.193'
 VPS_PORT = 14550
 
 def scale(val, neutral=1500, amplitude=400):
     return int(neutral + val * amplitude)
 
 def main():
-    # Инициализация MAVLink
+    # MAVLink init
     master = mavutil.mavlink_connection(f'udpout:{VPS_IP}:{VPS_PORT}')
-    master.wait_heartbeat()
-    print(f"Connected to system {master.target_system}, component {master.target_component}")
+    try:
+        master.wait_heartbeat(timeout=5)
+        print(f"Connected to system {master.target_system}, component {master.target_component}")
+    except:
+        print("⚠️ HEARTBEAT not received. Using default target IDs.")
+    target_system = 1
+    target_component = 1
 
-    # Инициализация геймпада
+    # Pygame init
     pygame.init()
-    pygame.joystick.init()
-    joystick = pygame.joystick.Joystick(0)
-    joystick.init()
-    print(f"Gamepad: {joystick.get_name()}")
+    screen = pygame.display.set_mode((400, 300))  # нужно для обработки клавиш
+    pygame.display.set_caption("RC Keyboard Control")
+
+    # Инициализируем управление
+    axes = {
+        "roll": 0.0,
+        "pitch": 0.0,
+        "throttle": 0.0,
+        "yaw": 0.0
+    }
+
+    print("🎮 Управление:")
+    print("  WASD = pitch/roll (левый стик)")
+    print("  стрелки = throttle/yaw (правый стик)")
+    print("  ESC = выход")
 
     while True:
-        pygame.event.pump()
-        roll  = joystick.get_axis(0)  # Лево-право
-        pitch = -joystick.get_axis(1) # Вперёд-назад
-        throttle = -joystick.get_axis(3)  # Газ
-        yaw = joystick.get_axis(2)    # Вращение
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                return
 
-        target_system = 1
-        target_component = 1
+        keys = pygame.key.get_pressed()
+
+        # Левый стик — WASD
+        axes["roll"] = -1.0 if keys[pygame.K_a] else (1.0 if keys[pygame.K_d] else 0.0)
+        axes["pitch"] = -1.0 if keys[pygame.K_w] else (1.0 if keys[pygame.K_s] else 0.0)
+
+        # Правый стик — стрелки
+        axes["yaw"] = -1.0 if keys[pygame.K_LEFT] else (1.0 if keys[pygame.K_RIGHT] else 0.0)
+        axes["throttle"] = 1.0 if keys[pygame.K_UP] else (-1.0 if keys[pygame.K_DOWN] else 0.0)
 
         master.mav.rc_channels_override_send(
             target_system,
             target_component,
-            scale(roll),     # chan1
-            scale(pitch),    # chan2
-            scale(throttle), # chan3
-            scale(yaw),      # chan4
-            0, 0, 0, 0        # остальные каналы — без изменений
+            scale(axes["roll"]),     # chan1 (Roll)
+            scale(axes["pitch"]),    # chan2 (Pitch)
+            scale(axes["throttle"]), # chan3 (Throttle)
+            scale(axes["yaw"]),      # chan4 (Yaw)
+            0, 0, 0, 0
         )
 
-        print(f"RC → roll: {scale(roll)}, pitch: {scale(pitch)}, throttle: {scale(throttle)}, yaw: {scale(yaw)}")
-
-        time.sleep(0.05)  # 20 Гц
+        print(f"RC → roll: {scale(axes['roll'])}, pitch: {scale(axes['pitch'])}, throttle: {scale(axes['throttle'])}, yaw: {scale(axes['yaw'])}")
+        time.sleep(0.05)
 
 if __name__ == '__main__':
     main()
