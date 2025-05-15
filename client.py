@@ -12,10 +12,10 @@ def main():
     # MAVLink init
     master = mavutil.mavlink_connection(f'udpout:{VPS_IP}:{VPS_PORT}')
     try:
-        master.wait_heartbeat(timeout=5)
-        print(f"Connected to system {master.target_system}, component {master.target_component}")
-        target_system = master.target_system
-        target_component = master.target_component
+        hb = master.wait_heartbeat(timeout=5)
+        print(f"✅ Got heartbeat from system {hb.get_srcSystem()}, component {hb.get_srcComponent()}")
+        target_system = hb.get_srcSystem()
+        target_component = hb.get_srcComponent()
     except:
         print("⚠️ HEARTBEAT not received. Using default target IDs.")
         target_system = 1
