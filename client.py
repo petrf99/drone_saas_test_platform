@@ -11,7 +11,7 @@ def scale(val, neutral=1500, amplitude=400):
 
 def main():
     # Инициализация MAVLink
-    master = mavutil.mavlink_connection(f'udp:{VPS_IP}:{VPS_PORT}')
+    master = mavutil.mavlink_connection(f'udpout:{VPS_IP}:{VPS_PORT}')
     master.wait_heartbeat()
     print(f"Connected to system {master.target_system}, component {master.target_component}")
 
@@ -29,9 +29,12 @@ def main():
         throttle = -joystick.get_axis(3)  # Газ
         yaw = joystick.get_axis(2)    # Вращение
 
+        target_system = 1
+        target_component = 1
+
         master.mav.rc_channels_override_send(
-            master.target_system,
-            master.target_component,
+            target_system,
+            target_component,
             scale(roll),     # chan1
             scale(pitch),    # chan2
             scale(throttle), # chan3
