@@ -11,7 +11,7 @@ def scale(val, neutral=1500, amplitude=400):
 
 def main():
     # Инициализация MAVLink
-    master = mavutil.mavlink_connection(f'udpout:{VPS_IP}:{VPS_PORT}')
+    master = mavutil.mavlink_connection(f'udp:{VPS_IP}:{VPS_PORT}')
     master.wait_heartbeat()
     print(f"Connected to system {master.target_system}, component {master.target_component}")
 
