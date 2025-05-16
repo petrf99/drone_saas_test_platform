@@ -5,7 +5,8 @@ load_dotenv()
 
 # === Настройки ===
 RFD_IP = os.getenv("RFD_IP")       # адрес сервера RFD
-RFD_PORT = int(os.getenv("RFD_PORT"))           # порт приёма RC-команд
+RFD_PORT = int(os.getenv("RFD_PORT"))           
+TOKEN_VAL_METHOD = os.getenv("TOKEN_VAL_METHOD")
 
 # === Константы каналов ===
 RC_CHANNELS_DEFAULTS = {
@@ -27,13 +28,5 @@ FREQUENCY = 20
 UDP_SEND_LOG_DELAY = 1
 
 # GUI
-FONT = "Arial"
-FONT_SIZE = 32
-FONT_COLOR = (255, 255, 255)
-INPUT_BG = (30, 30, 30)
-SELECTED_BG = (70, 70, 70)
-BUTTON_COLOR = (50, 150, 50)
-BUTTON_HOVER = (80, 180, 80)
-
-SCREEN_WIDTH = 300
-SCREEN_HEIGHT = 300
+SCREEN_WIDTH = 1000
+SCREEN_HEIGHT = 1000

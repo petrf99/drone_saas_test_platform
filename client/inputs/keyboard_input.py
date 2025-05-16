@@ -1,6 +1,6 @@
 import pygame
-from rc_client.config import STEP_ANALOG, LIMIT_MIN, LIMIT_MAX
-from rc_client.inputs.base_input import BaseRCInput
+from client.config import STEP_ANALOG, LIMIT_MIN, LIMIT_MAX
+from client.inputs.base_input import BaseRCInput
 
 class KeyboardInput(BaseRCInput):
     def __init__(self):

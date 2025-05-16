@@ -1,4 +1,4 @@
-from rc_client.inputs.keyboard_input import KeyboardInput
+from client.inputs.keyboard_input import KeyboardInput
 
 def get_rc_input(input_type="keyboard"):
     if input_type == "keyboard":

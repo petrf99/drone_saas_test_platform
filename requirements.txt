@@ -7,3 +7,4 @@ setuptools
 MAVProxy
 pygame
 dotenv
+requests
