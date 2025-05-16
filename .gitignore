@@ -1,7 +1,7 @@
 venv/
 venv310/
 ardupilot/
-mav.*
-.env
+/mav.*
+/.env
 logs/
 __pycache__/

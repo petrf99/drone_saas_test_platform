@@ -24,12 +24,12 @@ screen, clock = pygame_init()
 sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
 last_log_time = 0
-def send_rc_frame(sock, rc_state):
+def send_rc_frame(sock, rc_state, source):
     global last_log_time
     rc_frame = {
         "timestamp": time.time(),
         "session_id": session_id,
-        "source": "keyboard",
+        "source": source,
         "channels": rc_state
     }
     json_data = json.dumps(rc_frame).encode('utf-8')
@@ -67,7 +67,7 @@ while running:
 
     rc_state = rc_input.read_frame(rc_state)
 
-    send_rc_frame(sock, rc_state)
+    send_rc_frame(sock, rc_state, "keyboard")
 
 
 
@@ -76,6 +76,6 @@ neutral = RC_CHANNELS_DEFAULTS.copy()
 neutral["ch5"] = 1000
 neutral["ch6"] = 1000
 
-send_rc_frame(sock, neutral)
+send_rc_frame(sock, neutral, "keyboard")
 
 pygame.quit()

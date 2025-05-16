@@ -6,3 +6,4 @@ empy==3.3.2
 setuptools
 MAVProxy
 pygame
+dotenv

@@ -1,4 +1,7 @@
 import os
+from dotenv import load_dotenv
+
+load_dotenv()
 
 # === Настройки ===
 RFD_IP = os.getenv("RFD_IP")       # адрес сервера RFD
