@@ -6,6 +6,7 @@ logger = init_logger("RCClientAuth")
 from client.config import RFD_IP, RFD_PORT, TOKEN_VAL_METHOD
 
 RFD_URL = f"http://{RFD_IP}:{RFD_PORT}/{TOKEN_VAL_METHOD}"  
+print(RFD_URL)
 
 
 # В начале твоего auth.py или main.py — только на время разработки:
@@ -28,8 +29,8 @@ def get_valid_token():
         logger.info(f"Token entered: {token}")
 
         try:
-            with patch("requests.post", new=mock_post):
-                response = requests.post(RFD_URL, json={"token": token}, timeout=5)
+            # with patch("requests.post", new=mock_post):
+            response = requests.post(RFD_URL, json={"token": token}, timeout=5)
             if response.status_code == 200:
                 data = response.json()
                 if data.get("status") == "ok" and "session_id" in data:
