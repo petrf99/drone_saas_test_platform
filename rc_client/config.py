@@ -17,13 +17,23 @@ RC_CHANNELS_DEFAULTS = {
     "ch6": 1000   # aux (Shift)
 }
 
+# Keyboard params
 STEP_ANALOG = 20      # шаг изменения каналов
 LIMIT_MIN = 1000
 LIMIT_MAX = 2000
 
+# Main loop
+FREQUENCY = 20
+UDP_SEND_LOG_DELAY = 1
+
+# GUI
+FONT = "Arial"
+FONT_SIZE = 32
+FONT_COLOR = (255, 255, 255)
+INPUT_BG = (30, 30, 30)
+SELECTED_BG = (70, 70, 70)
+BUTTON_COLOR = (50, 150, 50)
+BUTTON_HOVER = (80, 180, 80)
+
 SCREEN_WIDTH = 300
 SCREEN_HEIGHT = 300
-
-FREQUENCY = 20
-
-UDP_SEND_LOG_DELAY = 1

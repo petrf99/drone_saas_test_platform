@@ -16,8 +16,13 @@ session_id = str(uuid.uuid4())
 
 
 # === Инициализация pygame ===
-from rc_client.gui import pygame_init
+from rc_client.gui import pygame_init, start_screen
 screen, clock = pygame_init()
+
+username, password, controller_type = start_screen(screen, clock)
+logger.info(f"User '{username}' selected controller '{controller_type}'")
+
+rc_input = get_rc_input(controller_type)
 
 
 # === Создание UDP-сокета ===
