@@ -2,3 +2,6 @@ venv/
 venv310/
 ardupilot/
 mav.*
+.env
+logs/
+__pycache__/

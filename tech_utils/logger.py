@@ -1,11 +1,24 @@
-from pymavlink import mavutil
+import logging
+import sys
+import os
+from pathlib import Path
 
-# Подключаемся к тому же порту, что и SITL
-conn = mavutil.mavlink_connection('udp:127.0.0.1:14550')
-conn.wait_heartbeat()
-print("Connected to SITL")
+def init_logger(name: str = "App") -> logging.Logger:
+    level_str = os.getenv("LOG_LEVEL", "INFO").upper()
+    to_file = os.getenv("LOG_TO_FILE", None)
+    handlers = [logging.StreamHandler(sys.stdout)]
 
-while True:
-    msg = conn.recv_match(blocking=True)
-    if msg and msg.get_type() == "RC_CHANNELS_OVERRIDE":
-        print("[LOG] RC_OVERRIDE RECEIVED BY SITL:", msg.to_dict())
+    level = getattr(logging, level_str, logging.INFO)
+
+    if to_file:
+        log_path = Path(to_file).resolve()
+        log_path.parent.mkdir(parents=True, exist_ok=True) 
+        handlers.append(logging.FileHandler(log_path))
+
+    logging.basicConfig(
+        level=level,
+        format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+        handlers=handlers
+    )
+
+    return logging.getLogger(name)
