@@ -8,3 +8,6 @@ MAVProxy
 pygame
 dotenv
 requests
+flask
+psycopg2
+apscheduler
