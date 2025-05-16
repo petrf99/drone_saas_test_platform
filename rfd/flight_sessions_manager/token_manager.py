@@ -6,22 +6,13 @@ from datetime import datetime, timedelta
 from dotenv import load_dotenv
 
 from tech_utils.logger import init_logger
-logger = init_logger("RFD_TokenManager")
+logger = init_logger("RFD_MATokensManager")
 
 load_dotenv()
 
-DB_CONFIG = {
-    "dbname": os.getenv("POSTGRES_DB"),
-    "user": os.getenv("POSTGRES_USER"),
-    "password": os.getenv("POSTGRES_PASSWORD"),
-    "host": os.getenv("POSTGRES_HOST"),
-    "port": os.getenv("POSTGRES_PORT"),
-}
+from tech_utils.db import get_conn
 
 TOKEN_EXPIRE_TMP = int(os.getenv("TOKEN_EXPIRE_TMP", 300))
-
-def get_conn():
-    return psycopg2.connect(**DB_CONFIG)
 
 def generate_token():
     raw = uuid.uuid4().hex

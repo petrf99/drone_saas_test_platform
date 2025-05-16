@@ -1,38 +1,13 @@
 # rfd_server.py
 from flask import Flask, request, jsonify
 import uuid
-import os
-import psycopg2
 from datetime import datetime
-from dotenv import load_dotenv
-load_dotenv()
 
 from tech_utils.logger import init_logger
-logger = init_logger("RFD_TokenValidator")
+logger = init_logger("RFD_MATokensManager")
 
-app = Flask(__name__)
+from tech_utils.db import get_conn
 
-from apscheduler.schedulers.background import BackgroundScheduler
-from rfd.token_manager import deactivate_expired_tokens
-
-scheduler = BackgroundScheduler()
-scheduler.add_job(deactivate_expired_tokens, "interval", seconds=60)
-scheduler.start()
-
-
-DB_CONFIG = {
-    "dbname": os.getenv("POSTGRES_DB"),
-    "user": os.getenv("POSTGRES_USER"),
-    "password": os.getenv("POSTGRES_PASSWORD"),
-    "host": os.getenv("POSTGRES_HOST"),
-    "port": os.getenv("POSTGRES_PORT"),
-}
-
-def get_conn():
-    return psycopg2.connect(**DB_CONFIG)
-
-
-@app.route("/validate-token", methods=["POST"])
 def validate_token():
     data = request.get_json()
     token = data.get("token")
@@ -77,6 +52,3 @@ def validate_token():
         logger.error(f"Exception in validate_token: {e}", exc_info=True)
         return jsonify({"status": "error", "reason": "Internal server error"}), 500
 
-
-if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=8000)
