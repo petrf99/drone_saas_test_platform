@@ -1,6 +1,6 @@
 from flask import Flask, request, jsonify
 
-from rfd.flight_sessions_manager.endpoints import validate_token, gcs_ready
+from rfd.flight_sessions_manager.endpoints import validate_token, gcs_ready, get_tailscale_ips, gcs_session_finish
 
 from tech_utils.logger import init_logger
 logger = init_logger("RFD_FlightSessionsManagerServer")
@@ -18,7 +18,8 @@ scheduler.start()
 
 app.add_url_rule("/validate-token", view_func=validate_token, methods=["POST"])
 app.add_url_rule("/gcs-ready", view_func=gcs_ready, methods=["POST"])
-
+app.add_url_rule("/get-tailscale-ips", view_func=get_tailscale_ips, methods=["POST"])
+app.add_url_rule("/gcs-session-finish", view_func=gcs_session_finish, methods=["POST"])
 
 def main():
     logger.info("DB init")

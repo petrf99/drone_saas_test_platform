@@ -15,6 +15,7 @@ def db_init():
                     token varchar(255) UNIQUE NOT NULL,
                     session_id uuid,
                     is_active_flg boolean DEFAULT TRUE,
+                    tag varchar(64),
                     created_at timestamp DEFAULT now(),
                     expires_at timestamp,
                     used_at timestamp,
@@ -34,6 +35,8 @@ def db_init():
                         client_ready_flg boolean DEFAULT FALSE,
                         tailscale_name_gcs varchar,
                         tailscale_name_client varchar,
+                        gcs_ip varchar,
+                        client_ip varchar,
                         status varchar DEFAULT 'waiting',  -- или ready, connected
                         created_at timestamp DEFAULT now(),
                         updated_at timestamp default now()

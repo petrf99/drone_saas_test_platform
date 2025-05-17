@@ -2,9 +2,12 @@
 from flask import Flask, request, jsonify
 import uuid
 from datetime import datetime
+import threading
 
 from tech_utils.logger import init_logger
 logger = init_logger("RFD_FlightSessionsManager")
+
+from rfd.flight_sessions_manager.vpn_establisher import gcs_client_connection_wait, disconnect_session
 
 from tech_utils.db import get_conn
 
@@ -23,6 +26,7 @@ def validate_token():
                     SELECT id, is_active_flg, expires_at, session_id
                     FROM grfp_sm_auth_tokens
                     WHERE token = %s
+                    AND tag = 'client'
                     LIMIT 1
                 """, (token,))
                 row = cur.fetchone()
@@ -47,19 +51,26 @@ def validate_token():
 
 
 
-from rfd.flight_sessions_manager.vpn_establisher import setup_vpn
 from rfd.flight_sessions_manager.token_manager import create_token
+import os
+
+GCS_PROOF_TOKEN = os.getenv("GCS_PROOF_TOKEN")
 
 def gcs_ready():
     data = request.get_json()
     mission_id = data.get("mission_id")
+    gcs_proof_token = data.get("gcs_proof_token")
+
+    if not GCS_PROOF_TOKEN == gcs_proof_token:
+        return jsonify({"status": "error", "reason": "Seems like your are not GCS"}), 400
 
     if not mission_id:
         return jsonify({"status": "error", "reason": "Missing mission_id"}), 400
 
     try:
         session_id = str(uuid.uuid4())
-        token = create_token(mission_id, session_id)
+        token = create_token(mission_id, session_id, 'gcs')
+        client_token = create_token(mission_id, session_id, 'client')
 
         with get_conn() as conn:
             with conn.cursor() as cur:
@@ -96,15 +107,131 @@ def gcs_ready():
                 """, (session_id, ))
                 conn.commit()
 
-        # Мокаем tailscale настройку
-        setup_vpn(mission_id)
+        # Setup VPN
+        threading.Thread(
+            target=gcs_client_connection_wait(mission_id, session_id),
+            args=(mission_id, session_id,),
+            daemon=True
+        ).start()
 
         logger.info(f"GCS for mission {mission_id} marked as ready. Session: {session_id}")
         return jsonify({
             "status": "ok",
-            "session_id": session_id
+            "session_id": session_id,
+            "auth_token": token
         })
 
     except Exception as e:
         logger.exception(f"GCS-ready failed with exception {e}")
         return jsonify({"status": "error", "reason": "internal server error"}), 500
+
+
+def get_tailscale_ips():
+    data = request.get_json()
+    session_id = data.get("session_id")
+
+    if not session_id:
+        return jsonify({"status": "error", "reason": "Missing session_id"}), 400
+
+    try:
+        with get_conn() as conn:
+            with conn.cursor() as cur:
+                # Проверим токен
+                cur.execute("""
+                    SELECT gcs_ip, client_ip
+                    FROM vpn_connections
+                    WHERE session_id = %s
+                    AND status = 'ready'
+                    LIMIT 1
+                """, (session_id,))
+                row = cur.fetchone()
+
+                if not row:
+                    logger.info(f"Request for ip of not-ready vpn-connection. Session_id: {session_id}")
+                    return jsonify({"status": "error", "reason": "VPN connection is not ready"}), 403
+
+                gcs_ip, client_ip = row
+
+                logger.info(f"Return tailscale IPs for session {session_id}:\nGCS IP: {gcs_ip}\nClient IP: {client_ip}")
+                return jsonify({"status": "ok", "gcs_ip": gcs_ip, "client_ip": client_ip})
+
+    except Exception as e:
+        logger.error(f"Exception in retrieving Tailscale IPs for session {session_id}:\n{e}", exc_info=True)
+        return jsonify({"status": "error", "reason": "Internal server error"}), 500
+    
+
+
+def gcs_session_finish():
+    data = request.get_json()
+    mission_id = data.get("mission_id")
+    session_id = data.get("session_id")
+    gcs_proof_token = data.get("gcs_proof_token")
+
+    if not GCS_PROOF_TOKEN == gcs_proof_token:
+        return jsonify({"status": "error", "reason": "Seems like your are not GCS"}), 400
+
+    if not mission_id:
+        return jsonify({"status": "error", "reason": "Missing mission_id"}), 400
+    
+    if not session_id:
+        return jsonify({"status": "error", "reason": "Missing session_id"}), 400
+
+    try:
+        with get_conn() as conn:
+            with conn.cursor() as cur:
+                cur.execute("""
+                    SELECT status
+                    FROM grfp_missions
+                    WHERE mission_id = %s
+                            """, (mission_id,))
+                
+                status = cur.fetchone()
+                if status:
+                    status = status[0]
+                else:
+                    logger.error(f"Mission {mission_id} not found")
+                    return jsonify({"status": "error", "reason": "mission not found"}), 400
+
+                if status != 'in progress':
+                    logger.error(f"Mission {mission_id} is not in progress")
+                    return jsonify({"status": "error", "reason": "mission is not in progress"}), 400
+
+                # Обновим миссию
+                cur.execute("""
+                    UPDATE grfp_missions
+                    SET status = 'finished',
+                        updated_at = %s
+                    WHERE mission_id = %s
+                """, (datetime.utcnow(), mission_id))
+                
+                # Write session to db
+                cur.execute("""
+                    UPDATE grfp_sm_sessions 
+                    SET status = 'finished'
+                    where session_id = %s
+                """, (session_id, ))
+
+                cur.execute("""
+                    UPDATE vpn_connections
+                    SET status = 'finished'
+                    where session_id = %s
+                """, (session_id, ))
+                conn.commit()
+
+
+        # Finish VPN
+        threading.Thread(
+            target=disconnect_session(session_id),
+            args=(session_id,),
+            daemon=True
+        ).start()
+
+        logger.info(f"Mission {mission_id} is being finished. As well as session {session_id}")
+        return jsonify({
+            "status": "ok"
+        })
+
+    except Exception as e:
+        logger.exception(f"GCS-ready failed with exception {e}")
+        return jsonify({"status": "error", "reason": "internal server error"}), 500
+

@@ -1,7 +1,8 @@
 import os
 import hashlib
 import uuid
-import psycopg2
+import requests
+import json
 from datetime import datetime, timedelta
 from dotenv import load_dotenv
 
@@ -19,18 +20,60 @@ def generate_token():
     token = hashlib.md5(raw.encode()).hexdigest()
     return token
 
-def create_token(mission_id, session_id):
-    token = generate_token()
+
+
+TAILSCALE_API_KEY = os.getenv("TAILSCALE_API_KEY")
+TAILNET = os.getenv("TAILNET")
+
+TS_AUTH_KEY_EXP_HOURS = int(os.getenv("TS_AUTH_KEY_EXP_HOURS"))
+
+# Создание нового auth key
+def create_tailscale_auth_key(tag: str = None, ephemeral=True, preauthorized=True, reusable=False, expiry_hours=TS_AUTH_KEY_EXP_HOURS):
+    url = f"https://api.tailscale.com/api/v2/tailnet/{TAILNET}/keys"
+
+    headers = {
+        "Content-Type": "application/json",
+    }
+
+    auth = (TAILSCALE_API_KEY, "")  # Basic Auth: API Key как username, пустой пароль
+
+    payload = {
+        "capabilities": {
+            "devices": {
+                "create": {
+                    "reusable": reusable,
+                    "ephemeral": ephemeral,
+                    "preauthorized": preauthorized,
+                    "tags": [f"tag:{tag}"] if tag else [],
+                }
+            }
+        },
+        "expirySeconds": expiry_hours * 3600
+    }
+
+    response = requests.post(url, headers=headers, auth=auth, data=json.dumps(payload))
+
+    if response.status_code == 200:
+        data = response.json()
+        logger.info(f"Tailscale Auth Key created. Key: {data['key']}. Expires in: {expiry_hours}d")
+        return data['key'], expiry_hours
+    else:
+        logger.info(f"Failed to create key: {response.status_code}, {response.text}")
+        return None
+
+
+def create_token(mission_id, session_id, tag):
+    token, exp_hours = create_tailscale_auth_key(tag)
     now = datetime.utcnow()
-    expires = now + timedelta(seconds=TOKEN_EXPIRE_TMP)
+    expires = now + timedelta(hours=exp_hours)
 
     with get_conn() as conn:
         with conn.cursor() as cur:
             cur.execute("""
                 INSERT INTO grfp_sm_auth_tokens 
-                (token, mission_id, session_id, is_active_flg, created_at, expires_at, updated_at)
-                VALUES (%s, %s, %s, TRUE, %s, %s, %s)
-            """, (token, mission_id, session_id, now, expires, now,))
+                (token, mission_id, session_id, is_active_flg, tag, created_at, expires_at, updated_at)
+                VALUES (%s, %s, %s, TRUE, %s, %s, %s, %s)
+            """, (token, mission_id, session_id, tag, now, expires, now,))
             conn.commit()
     logger.info(f"Tokens created successfully {token}, {now}, {expires}\n")
     return token
