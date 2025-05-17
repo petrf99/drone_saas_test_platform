@@ -1,6 +1,6 @@
 from flask import Flask, request, jsonify
 
-from rfd.flight_sessions_manager.endpoints import validate_token
+from rfd.flight_sessions_manager.endpoints import validate_token, gcs_ready
 
 from tech_utils.logger import init_logger
 logger = init_logger("RFD_FlightSessionsManagerServer")
@@ -17,6 +17,7 @@ scheduler.add_job(deactivate_expired_tokens, "interval", seconds=60)
 scheduler.start()
 
 app.add_url_rule("/validate-token", view_func=validate_token, methods=["POST"])
+app.add_url_rule("/gcs-ready", view_func=gcs_ready, methods=["POST"])
 
 
 def main():

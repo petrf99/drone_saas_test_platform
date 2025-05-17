@@ -17,7 +17,8 @@ def db_init():
                     time_window varchar(255),
                     drone_type varchar(128),
                     status varchar(32) DEFAULT 'new',
-                    created_at timestamp DEFAULT now()
+                    created_at timestamp DEFAULT now(),
+                    updated_at timestamp DEFAULT now()
                     );
 
                     CREATE TABLE IF NOT EXISTS grfp_drone_types (
@@ -25,7 +26,8 @@ def db_init():
                             drone_type_name varchar(128),
                             status varchar(128) DEFAULT 'available',
                             specification JSONB,
-                            created_at timestamp DEFAULT now()
+                            created_at timestamp DEFAULT now(),
+                            updated_at timestamp default now()
                             );
                     
                     CREATE TABLE IF NOT EXISTS grfp_locations (
@@ -33,7 +35,8 @@ def db_init():
                             location_name varchar(64),
                             location_description varchar(255),
                             status varchar(128) DEFAULT 'available',
-                            created_at timestamp DEFAULT now()
+                            created_at timestamp DEFAULT now(),
+                            updated_at timestamp default now()
                             );
                     """)
                 conn.commit()

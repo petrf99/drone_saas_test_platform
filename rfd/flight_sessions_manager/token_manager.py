@@ -19,7 +19,7 @@ def generate_token():
     token = hashlib.md5(raw.encode()).hexdigest()
     return token
 
-def create_token():
+def create_token(mission_id, session_id):
     token = generate_token()
     now = datetime.utcnow()
     expires = now + timedelta(seconds=TOKEN_EXPIRE_TMP)
@@ -28,9 +28,9 @@ def create_token():
         with conn.cursor() as cur:
             cur.execute("""
                 INSERT INTO grfp_sm_auth_tokens 
-                (token, session_id, is_active_flg, created_at, expires_at)
-                VALUES (%s, %s, TRUE, %s, %s)
-            """, (token, None, now, expires))
+                (token, mission_id, session_id, is_active_flg, created_at, expires_at, updated_at)
+                VALUES (%s, %s, %s, TRUE, %s, %s, %s)
+            """, (token, mission_id, session_id, now, expires, now,))
             conn.commit()
     logger.info(f"Tokens created successfully {token}, {now}, {expires}\n")
     return token
@@ -43,8 +43,9 @@ def deactivate_expired_tokens():
                 cur.execute("""
                     UPDATE grfp_sm_auth_tokens
                     SET is_active_flg = FALSE
+                    , updated_at = %s
                     WHERE expires_at <= %s AND is_active_flg = TRUE
-                """, (now,))
+                """, (now, now,))
                 conn.commit()
             logger.info("Deactivation of expired tokens succeed\n")
     except Exception as e:

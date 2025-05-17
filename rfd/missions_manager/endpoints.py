@@ -3,7 +3,7 @@ from flask import Flask, request, jsonify
 from tech_utils.db import get_conn, RealDictCursor
 from tech_utils.email_utils import send_email, ground_teams_email
 import uuid
-import json
+from datetime import datetime
 
 from tech_utils.logger import init_logger
 logger = init_logger("RFD_MissionsManager")
@@ -53,11 +53,13 @@ def change_mission_status():
     try:
         with get_conn() as conn:
             with conn.cursor() as cur:
+                now = datetime.utcnow()
                 cur.execute("""
                         UPDATE grfp_missions
                         SET status = %s
+                        , updated_at = %s
                         WHERE mission_id = %s
-                        """, (data['new_status'], data['mission_id']))
+                        """, (data['new_status'], now, data['mission_id']))
                 conn.commit()
                 logger.info(f"Succseffully changed status for {data['mission_id']}. New status: {data['new_status']}")
         

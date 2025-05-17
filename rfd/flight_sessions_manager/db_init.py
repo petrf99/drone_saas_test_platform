@@ -17,12 +17,14 @@ def db_init():
                     is_active_flg boolean DEFAULT TRUE,
                     created_at timestamp DEFAULT now(),
                     expires_at timestamp,
-                    used_at timestamp
+                    used_at timestamp,
+                    updated_at timestamp default now()
                 );
                     CREATE TABLE IF NOT EXISTS grfp_sm_sessions (
                         session_id UUID PRIMARY KEY,
                         status varchar(64) default 'new',
-                        created_at timestamp DEFAULT now()  
+                        created_at timestamp DEFAULT now()  ,
+                        updated_at timestamp default now()
                         );
 
                     CREATE TABLE IF NOT EXISTS vpn_connections (
@@ -33,7 +35,8 @@ def db_init():
                         tailscale_name_gcs varchar,
                         tailscale_name_client varchar,
                         status varchar DEFAULT 'waiting',  -- или ready, connected
-                        created_at timestamp DEFAULT now()
+                        created_at timestamp DEFAULT now(),
+                        updated_at timestamp default now()
                     );
                     """)
                 conn.commit()
