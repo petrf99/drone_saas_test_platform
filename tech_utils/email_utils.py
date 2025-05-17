@@ -4,11 +4,13 @@ from email.mime.text import MIMEText
 from dotenv import load_dotenv
 load_dotenv()
 
-def send_email(subject, body):
+ground_teams_email = os.getenv('GROUND_TEAMS_EMAIL')
+
+def send_email(subject, body, to):
     msg = MIMEText(body)
     msg["Subject"] = subject
     msg["From"] = os.getenv("EMAIL_USER")
-    msg["To"] = os.getenv("EMAIL_ALERT_TO")
+    msg["To"] = to
 
     with smtplib.SMTP(os.getenv("EMAIL_SMTP"), int(os.getenv("EMAIL_PORT"))) as server:
         server.starttls()

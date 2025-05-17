@@ -3,9 +3,9 @@ import requests
 from tech_utils.logger import init_logger
 logger = init_logger("RCClientAuth")
 
-from client.config import RFD_IP, RFD_PORT, TOKEN_VAL_METHOD
+from client.config import RFD_IP, RFD_SM_PORT, TOKEN_VAL_METHOD
 
-RFD_URL = f"http://{RFD_IP}:{RFD_PORT}/{TOKEN_VAL_METHOD}"  
+RFD_URL = f"http://{RFD_IP}:{RFD_SM_PORT}/{TOKEN_VAL_METHOD}"  
 print(RFD_URL)
 
 

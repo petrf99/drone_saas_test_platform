@@ -6,7 +6,7 @@ from datetime import datetime, timedelta
 from dotenv import load_dotenv
 
 from tech_utils.logger import init_logger
-logger = init_logger("RFD_MATokensManager")
+logger = init_logger("RFD_FlightSessionsManager")
 
 load_dotenv()
 
@@ -16,7 +16,7 @@ TOKEN_EXPIRE_TMP = int(os.getenv("TOKEN_EXPIRE_TMP", 300))
 
 def generate_token():
     raw = uuid.uuid4().hex
-    token = hashlib.md5(raw.encode()).hexdigest()[:10]
+    token = hashlib.md5(raw.encode()).hexdigest()
     return token
 
 def create_token():
@@ -27,11 +27,12 @@ def create_token():
     with get_conn() as conn:
         with conn.cursor() as cur:
             cur.execute("""
-                INSERT INTO grfp_auth_tokens 
+                INSERT INTO grfp_sm_auth_tokens 
                 (token, session_id, is_active_flg, created_at, expires_at)
                 VALUES (%s, %s, TRUE, %s, %s)
             """, (token, None, now, expires))
-    logger.info("Tokens created successfully\n")
+            conn.commit()
+    logger.info(f"Tokens created successfully {token}, {now}, {expires}\n")
     return token
 
 def deactivate_expired_tokens():
@@ -40,10 +41,11 @@ def deactivate_expired_tokens():
         with get_conn() as conn:
             with conn.cursor() as cur:
                 cur.execute("""
-                    UPDATE grfp_auth_tokens
+                    UPDATE grfp_sm_auth_tokens
                     SET is_active_flg = FALSE
                     WHERE expires_at <= %s AND is_active_flg = TRUE
                 """, (now,))
+                conn.commit()
             logger.info("Deactivation of expired tokens succeed\n")
     except Exception as e:
         logger.error(f"[!] Error in deactivate_expired_tokens: {e}\n")

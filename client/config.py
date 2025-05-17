@@ -5,7 +5,7 @@ load_dotenv()
 
 # === Настройки ===
 RFD_IP = os.getenv("RFD_IP")       # адрес сервера RFD
-RFD_PORT = int(os.getenv("RFD_PORT"))           
+RFD_SM_PORT = int(os.getenv("RFD_SM_PORT"))           
 TOKEN_VAL_METHOD = os.getenv("TOKEN_VAL_METHOD")
 
 # === Константы каналов ===

@@ -1,8 +1,8 @@
 from tech_utils.logger import init_logger
-logger = init_logger("RFD_FlightTaskManager")
+logger = init_logger("RFD_MissionsManager")
 
 from tech_utils.db import get_conn
-from tech_utils.email_utils import send_email
+from tech_utils.email_utils import send_email, ground_teams_email
 
 def alert_pending_tasks():
     try:
@@ -16,11 +16,13 @@ def alert_pending_tasks():
                 rows = cur.fetchall()
 
         if rows:
-            body = "Pending Flight Tasks:\n\n"
+            body = "Pending Missions:\n\n"
             for r in rows:
                 body += f"ID: {r[0]}, Loc: {r[1]}, Time: {r[2]}, Drone: {r[3]}, Created: {r[4]}\n"
 
-            send_email("[GRFP] Hourly Alert: New Tasks", body)
+            send_email("[GRFP] Hourly Alert: Pending Missions", body, ground_teams_email)
+
+            logger.info("Pending missions alert sent")
 
     except Exception as e:
-        logger.error(f"Error sending hourly task alert: {e}")
+        logger.error(f"Error sending pending missions alert: {e}")
