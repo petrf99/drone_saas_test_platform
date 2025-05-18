@@ -9,8 +9,10 @@ import os
 from tech_utils.db import get_conn
 
 # === НАСТРОЙКИ ===
+from urllib.parse import quote
+ 
 TAILSCALE_API_KEY = os.getenv("TAILSCALE_API_KEY")
-TAILNET = os.getenv("TAILNET") 
+TAILNET = quote(os.getenv("TAILNET"))
 POLL_INTERVAL = int(os.getenv("TAILSCALE_IP_POLL_INTERVAL"))
 TIMEOUT = os.getenv(os.getenv("TAILSCALE_IP_POLL_TIMEOUT"))
 
@@ -21,9 +23,17 @@ def get_devices():
     response.raise_for_status()
     return response.json()
 
+
+def get_auth_keys():
+    url = f"https://api.tailscale.com/api/v2/tailnet/{TAILNET}/keys"
+    auth = (TAILSCALE_API_KEY, "")
+    response = requests.get(url, auth=auth)
+    response.raise_for_status()
+    return response.json().get("keys", [])
+
 def gcs_client_connection_wait(mission_id, session_id, timeout=TIMEOUT, interval=POLL_INTERVAL):
-    hostname_client = f"client_{mission_id}"
-    hostname_gcs = f"gcs_{mission_id}"
+    hostname_client = f"client_{session_id}"
+    hostname_gcs = f"gcs_{session_id}"
 
     start_time = time.time()
 
@@ -40,7 +50,7 @@ def gcs_client_connection_wait(mission_id, session_id, timeout=TIMEOUT, interval
         if found["client"] and found["gcs"]:
             client_ip = found["client"]["addresses"][0]
             gcs_ip = found["gcs"]["addresses"][0]
-            logger.info(f"Both devices connected for mission {mission_id}. Client: {client_ip}. GCS: {gcs_ip}")
+            logger.info(f"Both devices connected for session {session_id}. Client: {client_ip}. GCS: {gcs_ip}")
             with get_conn() as conn:
                 with conn.cursor() as cur:
                     cur.execute("""
@@ -59,10 +69,28 @@ def gcs_client_connection_wait(mission_id, session_id, timeout=TIMEOUT, interval
                     conn.commit()
 
         if time.time() - start_time > timeout:
-            logger.error(f"Timeout error. No connected devices for mission_id={mission_id} found")
-            raise TimeoutError(f"Timeout error. No connected devices for mission_id={mission_id} found")
+            logger.error(f"Timeout error. No connected devices for session_id={session_id} found")
+            # Write session to db
+            with get_conn() as conn:
+                with conn.cursor() as cur:
+                    cur.execute("""
+                        UPDATE grfp_sm_sessions 
+                        SET status = 'aborted'
+                        where session_id = %s
+                    """, (session_id, ))
+
+                    cur.execute("""
+                        UPDATE vpn_connections
+                        SET status = 'timeout'
+                        where session_id = %s
+                    """, (session_id, ))
+                    conn.commit()
+
+            disconnect_session(session_id)
+            logger.info(f"Session {session_id} disconnected due to timeout")
+            raise TimeoutError(f"Timeout error. No connected devices for session_id={session_id} found")
         
-        logger.info(f"Waiting to connect client_{mission_id} and gcs_{mission_id}...")
+        logger.info(f"Waiting to connect client_{session_id} and gcs_{session_id}...")
         time.sleep(interval)
 
 
@@ -90,6 +118,7 @@ def delete_auth_key(key_id):
 
 def disconnect_session(session_id):
     devices = get_devices()
+    authkeys = get_auth_keys()
     seen_keys = set()
     deleted = 0
 
@@ -101,11 +130,13 @@ def disconnect_session(session_id):
             delete_device(device_id)
             deleted += 1
 
-            key_info = d.get("createdBy", {}).get("key", {})
-            key_id = key_info.get("id")
-            if key_id and key_id not in seen_keys:
-                delete_auth_key(key_id)
-                seen_keys.add(key_id)
+    for key in authkeys:
+        desc = key.get("description", "")
+        key_id = key.get("id")
+        if session_id == desc.split('_')[2]:
+            logger.info(f"Authkey '{desc}' found — deleting...")
+            delete_auth_key(key_id)
+            deleted += 1
 
     if deleted == 0:
         logger.info(f"No devices found in session_id={session_id} to delete.")

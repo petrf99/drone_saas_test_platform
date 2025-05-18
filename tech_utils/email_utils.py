@@ -5,6 +5,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 ground_teams_email = os.getenv('GROUND_TEAMS_EMAIL')
+rfd_admin_email = os.getenv('RFD_ADMIN_EMAIL')
 
 def send_email(subject, body, to):
     msg = MIMEText(body)

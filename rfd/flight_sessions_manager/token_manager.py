@@ -28,7 +28,7 @@ TAILNET = os.getenv("TAILNET")
 TS_AUTH_KEY_EXP_HOURS = int(os.getenv("TS_AUTH_KEY_EXP_HOURS"))
 
 # Создание нового auth key
-def create_tailscale_auth_key(tag: str = None, ephemeral=True, preauthorized=True, reusable=False, expiry_hours=TS_AUTH_KEY_EXP_HOURS):
+def create_tailscale_auth_key(mission_id, session_id, tag: str = None, ephemeral=True, preauthorized=True, reusable=False, expiry_hours=TS_AUTH_KEY_EXP_HOURS):
     url = f"https://api.tailscale.com/api/v2/tailnet/{TAILNET}/keys"
 
     headers = {
@@ -48,7 +48,8 @@ def create_tailscale_auth_key(tag: str = None, ephemeral=True, preauthorized=Tru
                 }
             }
         },
-        "expirySeconds": expiry_hours * 3600
+        "expirySeconds": expiry_hours * 3600,
+        "description": f"authkey_session_{session_id}_mission_{mission_id}"
     }
 
     response = requests.post(url, headers=headers, auth=auth, data=json.dumps(payload))
@@ -63,7 +64,7 @@ def create_tailscale_auth_key(tag: str = None, ephemeral=True, preauthorized=Tru
 
 
 def create_token(mission_id, session_id, tag):
-    token, exp_hours = create_tailscale_auth_key(tag)
+    token, exp_hours = create_tailscale_auth_key(mission_id, session_id, tag)
     now = datetime.utcnow()
     expires = now + timedelta(hours=exp_hours)
 
